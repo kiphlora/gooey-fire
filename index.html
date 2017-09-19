@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Gooey Fire</title>
+	<script src="js/d3/d3.min.js"></script>
+	<script src="js/HelperFunctions.js"></script>
+	<script src="js/Vec2.js"></script>
+	<script src="js/Color.mod.v2.js"></script>
+	<script src="js/Particle.mod.v2.js"></script>
+	<!--  
+	<script src="js/dat.gui.min.js"></script> -->
+	<style>
+		* { 
+			box-sizing: border-box;
+		}
+
+		body, html {
+			margin: 0;
+			padding: 0;
+		}
+
+		body {
+			background: #333;
+		}
+
+		#main-container {
+			display: flex;
+		}
+
+		#vis { 
+			overflow: visible !important;
+			width: 80%; 
+			/*margin: 0 auto; */
+			height: calc(100vh); 
+			border: 0px solid red; 
+			/*position: fixed; */
+			/*top: calc(0vh); */
+			/*display: inline-block;*/
+			
+			/*box-shadow: 0px 0px 30px #333;*/
+			/*outline: 10px dashed #fff;*/
+			padding: 0;
+		}
+		
+		#particle-explorer {
+			width: 20%;
+			color: white;
+			height: calc(100vh);
+			overflow: auto;
+		}
+
+		#particle-explorer div {
+			border-bottom: 1px solid white;
+			padding: 5px;
+		}
+
+		#particle-explorer div p {
+			margin: 0;
+			padding: 0;
+		}
+		
+		/*svg { border: 1px solid white; overflow: visible; }*/
+
+		
+	</style>
+</head>
+<body>
+	
+	<div id="main-container">
+		<div id="vis"></div>
+		<div id="particle-explorer"></div>	
+	</div>
+	
+	<div id="marker"></div>
+	
+	<script>
+
+		var factory = new SVGFactory();
+		var svgContainer = d3.select("#vis");
+		var svg = factory.newSVG(svgContainer);
+		var width = factory.width();
+		var height = factory.height();
+		var svgBounds = { x1: 0, x2: width, y1: 0, y2: height };
+		var center = new Vec2(width/2, height/2);
+	  
+		// blur filter
+		svg.append("defs")
+			.append("filter")
+	  		.attr("id", "blur")
+			.append("feGaussianBlur")
+	  		.attr("stdDeviation", 5);
+
+	  // gooey filter
+	  //<defs>
+    //<filter id="gooey">
+     // <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
+      //<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="gooey"/>
+     // <feComposite in="SourceGraphic" in2="gooey" operator="atop"/>
+    //</filter>
+  //</defs>
+
+  	var goofilter = svg.append("defs")
+  		.append("filter")
+  			.attr("id", "gooey");
+  		goofilter.append("feGaussianBlur")
+  			.attr("in", "SourceGraphic")
+  			.attr("stdDeviation", 10)
+  			.attr("result", "goo-blur");
+  		goofilter.append("feColorMatrix")
+  			.attr("in", "goo-blur")
+  			.attr("mode", "matrix")
+  			.attr("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7")
+  			.attr("result", "gooey");
+  		goofilter.append("feComposite")
+  			.attr("in", "SourceGraphic")
+  			.attr("in2", "gooey")
+  			.attr("operator", "atop");
+
+		// var dragon = new LSystem();
+		// dragon.addRule("X", "X-YF-");
+		// dragon.addRule("Y", "+FX+Y")
+		// dragon.origin(center);//new Vec2(10, height-10));
+		// dragon.move(10).initialDirection(Vec2.north().angle()).angle(Vec2.degToRad(90));
+
+		// dragon.generations(10);
+		// console.log(dragon.run(dragon.generations()));
+		// var points = dragon.drawPoints();
+		// console.log(points);
+
+		// function drawLines(points) {
+		// 	for (var i=0; i<points.length-1; i++) {
+		// 		svg.append("line")
+		// 			.attr({x1: points[i].x, y1: points[i].y})
+		// 			.attr({x2: points[i+1].x, y2: points[i+1].y})
+		// 			.attr("stroke", new Color().r(255).rgbString());
+		// 	}	
+		// }
+
+		// function drawPath(points, animate, duration, interpolation, easing) {
+		// 	animate = animate || false;
+		// 	duration = duration || 1000;
+		// 	easing = easing || "cubic-in-out";
+		// 	interpolation = interpolation || "linear";
+		// 	var line = d3.svg.line()
+  //   		.x(function(d) { return d.x; })
+  //     	.y(function(d) { return d.y; })
+  //     	.interpolate(interpolation);
+
+		// 	var paths = svg.append("path").attr("d", line(points));
+
+		// 	if (animate) {
+
+		//     var pathLength = paths.node().getTotalLength()*1.1;
+
+		// 		paths
+		//   			.attr("stroke-dasharray", pathLength + " " + pathLength)
+		//   			.attr("stroke-dashoffset", pathLength)
+		//   			.attr("fill", "none")
+		//   			.attr("stroke", new Color().r(255).rgbString())
+		//   			//.style("stroke-width", 3)
+		//   		.transition()
+		//   			.ease(easing)
+		//   			.duration(duration)
+		//   			.attr("stroke-dashoffset", 0);
+						
+		// 	}
+		// 	else {
+		// 		paths.attr("fill", "none").attr("stroke", new Color().r(255).rgbString());
+		// 	}
+		// }
+		
+		// drawPath(points, true, 5000, "basis", "linear");
+
+		var pcolors = [];
+		function updateParticles(plist) {
+			plist.forEach(function(p, ind) {
+				var i = p.custom("id");
+				var prop = 1 / emitter.maxParticles();
+				// var theta = 2*Math.PI * i * prop;
+				// var newdir = Vec2.normWithAngle(theta).mag(0.01);
+				// var newdir = Vec2.randNorm().mag(0.2);
+				var newdir = Vec2.randSpray(Vec2.south(), Vec2.degToRad(90)).mag(0.15);
+				p.applyForce(newdir);//Vec2.randNorm().mag(1/5));//newdir);
+				var wind = Vec2.randNorm().mag(0.1);
+				p.applyForce(wind);
+				p.decay();
+				if (p.custom("color") === undefined) p.custom("color", Color(255, 255, 0, 1));
+				if (p.custom("rx") === undefined) p.custom("rx", 200);//*i*prop);
+				if (p.custom("width") === undefined) p.custom("width", 15);
+				if (p.custom("height") === undefined) p.custom("height", 15);
+			});
+		}
+
+		function drawParticles(plist) {
+
+			// can't bind data to the elements as normal since the indices of the particles changes frequently
+			// the emitter removes by using splice, starting from the end of the array, so when the array size
+			// changes, it doesn't mess up the access of the for loop; however, it alters the indices of the
+			// individual particles, which affects the d3 binding.
+			// i.e. the rect bound to particle 1's data this time might be bound to particle k's data next time
+			// because of the changes in the particle array
+
+			// a solution is to create all rect elements immediately and create a mapping between the the rect
+			// at position k with the particle with custom id k
+			var r = renderer.selectAll(".particles").classed("dead", true);
+			for (var i=0; i<plist.length; i++) {
+				var d = plist[i];
+				
+				var t = 1;//1.1*d.life() / emitter.particleLife();
+
+				r.filter(".particle-" + d.custom("id"))
+					.classed("dead", false)
+					.attr("x", d.pos().x - d.custom("width")*t/2)
+					.attr("y", d.pos().y - d.custom("height")*t/2)
+					.attr("rx", d.custom("rx"))
+					.attr("ry", d.custom("rx"))
+					.attr("width", d.custom("width") * t)
+					.attr("height", d.custom("height") * t)
+					.attr("fill", d.custom("color").g(255*d.life()/emitter.particleLife()).rgbaString())
+					.attr("stroke", d.custom("color").rgbString())
+					.style("opacity", 2*d.life() / emitter.particleLife());
+			}
+			r.filter(".dead").style("opacity", 0);
+		}
+
+		var mp = 80;
+		var pl = 50;
+		var emitter = Emitter().pos(center).maxParticles(mp).emissionDirection(Vec2.zero()).particleLife(pl);
+		var renderer = svg.append("g");
+		renderer.attr("filter", "url(#gooey)");
+
+		for (var i=0; i<emitter.maxParticles(); i++) {
+			renderer.append("rect").attr("class", "particles particle-"+i);
+		}
+		var rectW = 8;
+		var rectH = 100;
+		svg.append("rect").attr("x", emitter.pos().x - rectW/2).attr("y", emitter.pos().y).attr("width", rectW).attr("height", rectH).attr("fill", Color("rgb(241, 230, 202)").rgbaString());
+
+		svg.append("rect").attr("x", emitter.pos().x - 4).attr("y", emitter.pos().y).attr("width", 8).attr("height", 8).attr("fill", Color("#0099ff").rgbaString()).attr("rx", 1);		
+
+		
+
+		
+
+			
+
+		var curTime = 0;
+		var eTime = 0;
+		var prevTime = Date.now();
+		function update(t) {
+			curTime = Date.now();
+			eTime += curTime - prevTime;
+			prevTime = curTime;
+			// console.log(eTime);
+
+			if (eTime >= 0) {
+				emitter.update(updateParticles);
+				emitter.draw(drawParticles);
+				eTime = 0;	
+			}
+			
+			
+			
+			
+			raf = window.requestAnimationFrame(update);	
+		}
+
+		 raf = requestAnimationFrame(update);
+
+		 
+
+	</script>
+</body>
+</html>
