@@ -10,10 +10,28 @@
 	
 	<link rel="stylesheet" href="../css/mini-style.css">
 
+	<style>
+		#play {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			margin: 10px;
+			padding: 10px 15px;
+			color: white;
+			box-shadow: none;
+			z-index: 100;
+		}
+
+		#play:hover {
+			background-color: white;
+			color: black;
+		}
+	</style>
 </head>
 <body>
 	<div id="container">
 		<div id="vis">
+			<button id="play">Play</button>
 		</div>
 	</div>
 
@@ -160,7 +178,26 @@
 			.attr("fill", "#0099ff")
 			.attr("rx", 1);
 
-		var raf = requestAnimationFrame(loop);
+		var raf;
+
+		// select the Play button
+		var playButton = d3.select("#play");
+
+		// click the Play button to toggle loop() on/off
+		var playing = false;
+		playButton.on("click", function(){
+			if (playing) {
+				cancelAnimationFrame(raf);
+				playButton.text("Play");
+			}
+			else {
+				raf = requestAnimationFrame(loop);
+				playButton.text("Pause");
+			}
+
+			playing = !playing;
+		});
+
 
 		function loop() {
 			emitter.update();
