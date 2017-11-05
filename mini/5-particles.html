@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>5 Particles</title>
+
+	<script src="../js/d3/d3.min.js"></script>
+	<script src="../js/util.js"></script>
+	<script src="../js/particle-system.js"></script>
+	
+	<link rel="stylesheet" href="../css/mini-style.css">
+
+	<style>
+		#play {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			margin: 10px;
+			padding: 10px 15px;
+			color: white;
+			box-shadow: none;
+		}
+
+		#play:hover {
+			background-color: white;
+			color: black;
+		}
+	</style>
+</head>
+<body>
+	<div id="container">
+		<div id="vis">
+			<button id="play">Play</button>
+		</div>
+	</div>
+
+	<script>
+		var width = 950;
+		var height = 290;
+
+		// select the div where we'll put the SVG container
+		var div = d3.select("#vis");
+
+		// create the SVG container
+		var svg = div.append("svg")
+				.attr("width", width)
+				.attr("height", height);
+		
+
+		var particleArray = [];
+
+		// use the createParticle function (below) to make 5 particles
+		for (var i = 0; i < 5; i++) {
+			particle = createParticle();
+			particleArray.push(particle);
+		}
+
+		function createParticle() {
+			var particle = Particle();
+
+			// define values for the particle
+			particle
+				.life(100)
+				.xbounds(0, width)
+				.ybounds(0, height);
+
+
+			// place the particle randomly in the bounds of the view
+			var xLoc = randReal(0, width);
+			var yLoc = randReal(0, height);
+
+			particle
+				.x(xLoc)
+				.y(yLoc);
+
+			// since our particle is a function, and functions are objects, we can attach new attributes to it
+			// let's define random velocities and attach them to the particle
+			var vx = randReal(-3, 3);
+			var vy = randReal(-3, 3);
+
+			particle.vx = vx;
+			particle.vy = vy;
+
+			// finally, we'll want to display our particle
+			// since we will be using SVG Filters, let's use SVG elements
+			// attach a new svg circle to this particle (using D3)
+			var svgCircle = svg.append("circle");
+
+			particle.svgElement = svgCircle;
+
+			return particle;
+		}
+
+		function updateParticle(particle) {
+			// move the particle based on its velocity
+			var vx = particle.vx;
+			var vy = particle.vy;
+			particle.move(vx, vy);
+
+			// decrease the particle's life
+			particle.decreaseLife();
+
+			// mark the particle as dead if it is outside of the x and y bounds
+			if (!particle.isInsideBounds()) {
+				particle.isAlive(false);
+			}
+		}
+
+		function drawParticle(particle) {
+			// grab the svg circle from the particle
+			var circle = particle.svgElement;
+
+			// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+			circle
+					.attr("cx", particle.x())
+					.attr("cy", particle.y())
+					.attr("r", 5)
+					.attr("fill", "#ff9900") // orange
+					.attr("fill-opacity", particle.lifeRemainingPercentage());
+		}
+
+		function destroyParticle(particle) {
+			// remove SVG element
+			particle.svgElement.remove();
+		}
+
+
+		var raf;
+
+		// select the Play button
+		var playButton = d3.select("#play");
+
+		// click the Play button to toggle loop() on/off
+		var playing = false;
+		playButton.on("click", function(){
+			if (playing) {
+				cancelAnimationFrame(raf);
+				playButton.text("Play");
+			}
+			else {
+				raf = requestAnimationFrame(loop);
+				playButton.text("Pause");
+			}
+
+			playing = !playing;
+		});
+
+
+		function loop() {
+			// traverse the array in reverse order
+			for (var i = particleArray.length - 1; i >= 0; i--) {
+				// get the particle
+				var particle = particleArray[i];
+
+				// update the particle
+				updateParticle(particle);
+
+				// draw the particle
+				drawParticle(particle);
+
+				// if the particle is dead...
+				if (!particle.isAlive()) {
+					// destroy the particle (which in this case simply means to remove the SVG element from the
+					// particle to make sure that the DOM tree doesn't get too crowded with unused SVG elements)
+					destroyParticle(particle);
+
+					// then, remove the particle from the array using splice
+					particleArray.splice(i, 1);
+
+					// and, finally, we can create a new particle to take its place
+					particleArray.push(createParticle());
+				}
+			}
+
+			// keep the loop going
+			raf = requestAnimationFrame(loop);
+		}
+		
+
+
+
+
+
+	</script>
+
+
+
+</body>
+</html>
