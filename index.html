@@ -3,273 +3,1245 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Gooey Fire</title>
+
+	<link href="https://fonts.googleapis.com/css?family=Dosis:200" rel="stylesheet">
+	<link rel="stylesheet" type="text/css" href="css/project-theme.css">
+	<link rel="stylesheet" type="text/css" href="css/page-style.css">
+	<link rel="stylesheet" href="css/prism.css">
+
+	<script src="js/prism.js"></script>
+
 	<script src="js/d3/d3.min.js"></script>
-	<script src="js/HelperFunctions.js"></script>
-	<script src="js/Vec2.js"></script>
-	<script src="js/Color.mod.v2.js"></script>
-	<script src="js/Particle.mod.v2.js"></script>
-	<!--  
-	<script src="js/dat.gui.min.js"></script> -->
+	<script src="js/util.js"></script>
 	<style>
-		* { 
-			box-sizing: border-box;
+
+		pre[data-lang]::before {
+		  content: attr(data-lang);
+		  display: block;
+		  text-align: right;
+		  /*border-bottom: 2px dotted #333;*/
+		}
+		pre {
+		    border-radius: 5px; 
+		    -moz-border-radius: 5px; 
+		    -webkit-border-radius: 5px;
+		    border: 1px solid #BCBEC0;
+		    background: #F1F3F5;
+		    padding: 10px;
+		    padding-left: 30px;
+		    font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace;
 		}
 
-		body, html {
-			margin: 0;
-			padding: 0;
+		code {
+		    border-radius: 5px; 
+		    -moz-border-radius: 5px; 
+		    -webkit-border-radius: 5px; 
+		    border: 1px solid #BCBEC0;
+		    padding: 2px;
+		    font:12px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace
 		}
 
-		body {
-			background: #333;
+		pre code {
+		    border-radius: 0px; 
+		    -moz-border-radius: 0px; 
+		    -webkit-border-radius: 0px; 
+		    border: 0px;
+		    padding: 2px;
+		    font:16px Monaco,Consolas,"Andale  Mono","DejaVu Sans Mono",monospace;
 		}
 
-		#main-container {
-			display: flex;
+		button.accordion {
+		    background-color: #eee;
+		    color: #444;
+		    cursor: pointer;
+		    padding: 18px;
+		    width: 100%;
+		    border: none;
+		    text-align: left;
+		    outline: none;
+		    font-size: 15px;
+		    transition: 0.4s;
 		}
 
-		#vis { 
-			overflow: visible !important;
-			width: 80%; 
-			/*margin: 0 auto; */
-			height: calc(100vh); 
-			border: 0px solid red; 
-			/*position: fixed; */
-			/*top: calc(0vh); */
-			/*display: inline-block;*/
-			
-			/*box-shadow: 0px 0px 30px #333;*/
-			/*outline: 10px dashed #fff;*/
-			padding: 0;
-		}
-		
-		#particle-explorer {
-			width: 20%;
-			color: white;
-			height: calc(100vh);
-			overflow: auto;
+		button.accordion.active, button.accordion:hover {
+		    background-color: #ccc;
 		}
 
-		#particle-explorer div {
-			border-bottom: 1px solid white;
-			padding: 5px;
+		button.accordion:after {
+		    content: '\002B';
+		    color: #777;
+		    font-weight: bold;
+		    float: right;
+		    margin-left: 5px;
 		}
 
-		#particle-explorer div p {
-			margin: 0;
-			padding: 0;
+		button.accordion.active:after {
+		    content: "\2212";
 		}
-		
-		/*svg { border: 1px solid white; overflow: visible; }*/
 
-		
+		div.panel {
+		    padding: 0 0px;
+		    background-color: white;
+		    max-height: 0;
+		    overflow: hidden;
+		    transition: max-height 0.2s ease-out;
+		}
+
 	</style>
 </head>
 <body>
-	
-	<div id="main-container">
-		<div id="vis"></div>
-		<div id="particle-explorer"></div>	
-	</div>
-	
-	<div id="marker"></div>
-	
-	<script>
+  <div class="container">
+		<header class="hero-header">
+			<div class="my-name">Gooey Fire</div>
+			<div class="nav">
+				<a href="about/index.html"><div class="about-nav">About GF</div></a>
+				<a href="http://www.kiphlora.com"><div class="portfolio-nav">Return to Kiphlora</div></a>
+			</div>
+		</header>
 
-		var factory = new SVGFactory();
-		var svgContainer = d3.select("#vis");
-		var svg = factory.newSVG(svgContainer);
-		var width = factory.width();
-		var height = factory.height();
-		var svgBounds = { x1: 0, x2: width, y1: 0, y2: height };
-		var center = new Vec2(width/2, height/2);
-	  
-		// blur filter
-		svg.append("defs")
-			.append("filter")
-	  		.attr("id", "blur")
-			.append("feGaussianBlur")
-	  		.attr("stdDeviation", 5);
-
-	  // gooey filter
-	  //<defs>
-    //<filter id="gooey">
-     // <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur"/>
-      //<feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="gooey"/>
-     // <feComposite in="SourceGraphic" in2="gooey" operator="atop"/>
-    //</filter>
-  //</defs>
-
-  	var goofilter = svg.append("defs")
-  		.append("filter")
-  			.attr("id", "gooey");
-  		goofilter.append("feGaussianBlur")
-  			.attr("in", "SourceGraphic")
-  			.attr("stdDeviation", 10)
-  			.attr("result", "goo-blur");
-  		goofilter.append("feColorMatrix")
-  			.attr("in", "goo-blur")
-  			.attr("mode", "matrix")
-  			.attr("values", "1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7")
-  			.attr("result", "gooey");
-  		goofilter.append("feComposite")
-  			.attr("in", "SourceGraphic")
-  			.attr("in2", "gooey")
-  			.attr("operator", "atop");
-
-		// var dragon = new LSystem();
-		// dragon.addRule("X", "X-YF-");
-		// dragon.addRule("Y", "+FX+Y")
-		// dragon.origin(center);//new Vec2(10, height-10));
-		// dragon.move(10).initialDirection(Vec2.north().angle()).angle(Vec2.degToRad(90));
-
-		// dragon.generations(10);
-		// console.log(dragon.run(dragon.generations()));
-		// var points = dragon.drawPoints();
-		// console.log(points);
-
-		// function drawLines(points) {
-		// 	for (var i=0; i<points.length-1; i++) {
-		// 		svg.append("line")
-		// 			.attr({x1: points[i].x, y1: points[i].y})
-		// 			.attr({x2: points[i+1].x, y2: points[i+1].y})
-		// 			.attr("stroke", new Color().r(255).rgbString());
-		// 	}	
-		// }
-
-		// function drawPath(points, animate, duration, interpolation, easing) {
-		// 	animate = animate || false;
-		// 	duration = duration || 1000;
-		// 	easing = easing || "cubic-in-out";
-		// 	interpolation = interpolation || "linear";
-		// 	var line = d3.svg.line()
-  //   		.x(function(d) { return d.x; })
-  //     	.y(function(d) { return d.y; })
-  //     	.interpolate(interpolation);
-
-		// 	var paths = svg.append("path").attr("d", line(points));
-
-		// 	if (animate) {
-
-		//     var pathLength = paths.node().getTotalLength()*1.1;
-
-		// 		paths
-		//   			.attr("stroke-dasharray", pathLength + " " + pathLength)
-		//   			.attr("stroke-dashoffset", pathLength)
-		//   			.attr("fill", "none")
-		//   			.attr("stroke", new Color().r(255).rgbString())
-		//   			//.style("stroke-width", 3)
-		//   		.transition()
-		//   			.ease(easing)
-		//   			.duration(duration)
-		//   			.attr("stroke-dashoffset", 0);
-						
-		// 	}
-		// 	else {
-		// 		paths.attr("fill", "none").attr("stroke", new Color().r(255).rgbString());
-		// 	}
-		// }
-		
-		// drawPath(points, true, 5000, "basis", "linear");
-
-		var pcolors = [];
-		function updateParticles(plist) {
-			plist.forEach(function(p, ind) {
-				var i = p.custom("id");
-				var prop = 1 / emitter.maxParticles();
-				// var theta = 2*Math.PI * i * prop;
-				// var newdir = Vec2.normWithAngle(theta).mag(0.01);
-				// var newdir = Vec2.randNorm().mag(0.2);
-				var newdir = Vec2.randSpray(Vec2.south(), Vec2.degToRad(90)).mag(0.15);
-				p.applyForce(newdir);//Vec2.randNorm().mag(1/5));//newdir);
-				var wind = Vec2.randNorm().mag(0.1);
-				p.applyForce(wind);
-				p.decay();
-				if (p.custom("color") === undefined) p.custom("color", Color(255, 255, 0, 1));
-				if (p.custom("rx") === undefined) p.custom("rx", 200);//*i*prop);
-				if (p.custom("width") === undefined) p.custom("width", 15);
-				if (p.custom("height") === undefined) p.custom("height", 15);
-			});
-		}
-
-		function drawParticles(plist) {
-
-			// can't bind data to the elements as normal since the indices of the particles changes frequently
-			// the emitter removes by using splice, starting from the end of the array, so when the array size
-			// changes, it doesn't mess up the access of the for loop; however, it alters the indices of the
-			// individual particles, which affects the d3 binding.
-			// i.e. the rect bound to particle 1's data this time might be bound to particle k's data next time
-			// because of the changes in the particle array
-
-			// a solution is to create all rect elements immediately and create a mapping between the the rect
-			// at position k with the particle with custom id k
-			var r = renderer.selectAll(".particles").classed("dead", true);
-			for (var i=0; i<plist.length; i++) {
-				var d = plist[i];
+		<div class="hero-content-wrapper">
+			<div class="intro-content">
+				<h3>On the way to gooey fire</h3>				
+				<p>
+					Today, we're going to make the gooey fire you see below.
+				</p>
 				
-				var t = 1;//1.1*d.life() / emitter.particleLife();
+				<div id="gooey-fire">
+					<iframe src="mini/gooey-fire.html" frameborder="0"></iframe>
+				</div>
 
-				r.filter(".particle-" + d.custom("id"))
-					.classed("dead", false)
-					.attr("x", d.pos().x - d.custom("width")*t/2)
-					.attr("y", d.pos().y - d.custom("height")*t/2)
-					.attr("rx", d.custom("rx"))
-					.attr("ry", d.custom("rx"))
-					.attr("width", d.custom("width") * t)
-					.attr("height", d.custom("height") * t)
-					.attr("fill", d.custom("color").g(255*d.life()/emitter.particleLife()).rgbaString())
-					.attr("stroke", d.custom("color").rgbString())
-					.style("opacity", 2*d.life() / emitter.particleLife());
+				<h3>Ingredients</h3>
+				<p>
+					We need 3 ingredients to make gooey fire:
+				</p>
+				<ul>
+					<li><a href="#chapter-particles">Particles</a></li>
+					<li><a href="#chapter-emitters">An Emitter</a></li>
+					<li><a href="#chapter-svg-filters">SVG Filters</a></li>
+				</ul>
+
+				<h3 id="chapter-particles">
+					Particles
+				</h3>
+				<p>
+					Particles are small shapes that, when combined with lots of other ones, create neat effects. They usually only exist for a short period of time, especially when they are used to simulate smoke, fire, or snow. A particle's <span class="notes">life</span> is the amount of time the particle exists.
+				</p>
+				<p>
+					Here's an example of how we might create a simple Particle module/class.
+				</p>
+
+				<button class="accordion">Click to see/hide the Particle module code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript" id="particle-class">
+				<code class="language-javascript">
+function Particle() {
+	// initial values of internal variables
+	var x = 0;
+	var y = 0;
+	var lifespan = 0;
+	var life = lifespan;
+
+	var xbounds = [0,0];
+	var ybounds = [0,0];
+
+	var isAlive = false;
+
+	function my(){}
+
+	// the following functions allow access to the inner variables
+	my.x = function(value) {
+		if (!arguments.length) return x;  // call particle.x() to "get" x
+		x = value;                        // call particle.x(value) to "set" x = value
+		return my;
+	};
+
+	my.y = function(value) {
+		if (!arguments.length) return y;
+		y = value;
+		return my;
+	};
+
+	my.life = function(value) {
+		if (!arguments.length) return life;
+		lifespan = value;
+		life = clamp(value, 0, lifespan);
+		isAlive = life > 0 ? true : false;
+		return my;
+	};
+
+	my.lifeRemainingPercentage = function() {
+		return life / lifespan;
+	};
+
+	my.xbounds = function(lower, upper) {
+		if (!arguments.length) return xbounds;
+		xbounds = [Math.min(lower, upper), Math.max(lower, upper)];
+		return my;
+	};
+
+	my.ybounds = function(lower, upper) {
+		if (!arguments.length) return ybounds;
+		ybounds = [Math.min(lower, upper), Math.max(lower, upper)];
+		return my;
+	};
+
+	my.isAlive = function(bool) {
+		if (!arguments.length) return isAlive;
+		isAlive = bool;
+		return my;
+	};
+
+	my.hasLifeRemaining = function() {
+		if (life > 0)
+			return true;
+		else
+			return false;
+	};
+
+	// checks to see if the particle is within the boundaries or not
+	my.isInsideBounds = function() {
+		if (x >= xbounds[0] && x <= xbounds[1] && y >= ybounds[0] && y <= ybounds[1])
+			return true;
+		else
+			return false;
+	};
+
+	my.decreaseLife = function(value) {
+		if (!arguments.length)
+			life--;
+		else
+			life -= value;
+
+		my.isAlive(my.hasLifeRemaining());
+	};
+
+	my.move = function(vx, vy) {
+		x += vx;
+		y += vy;
+	};
+
+	return my;
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					If we were to instantiate a particle using the class, it wouldn't do or show anything. This is because the class doesn't implement the <span class="notes">particle lifecycle</span>, which involves:
+				</p>
+				<ol>
+					<li><span class="notes">Creating</span> the particle.</li>
+					<li><span class="notes">Updating</span> and <span class="notes">drawing</span> the particle during the course of its life.</li>
+					<li><span class="notes">Destroying</span> the particle once its life has been exhausted.</li>
+				</ol>
+				<p>
+					By design, the lifecycle was not implemented in the Particle class. We'll see why in the next section on Emitters. For now, let's take a look at each section of the lifecycle using a simple example.
+				</p>
+				<p>
+					In our example, we're going to <span class="notes">create</span> 5 particles, placing them in random locations and with random velocities. We're going to <span class="notes">update</span> and <span class="notes">draw</span> the particles' locations and opacity based on their velocities and the amounts of life they have remaining, respectively. Note that as the particle's life dwindles, the particle slowly fades away. Finally, whenever a particle's life reaches zero, we'll <span class="notes">destroy</span> that particle and immediately <span class="notes">create</span> a new one.
+				</p>
+				<p>
+					Let's start by looking at the createParticle function:
+				</p>
+
+				<button class="accordion">Click to see/hide the Create Particle code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+function createParticle() {
+	// create a new Particle using the Particle module
+	var particle = Particle();
+
+	// define values for the particle
+	particle
+		.life(100)
+		.xbounds(0, width)
+		.ybounds(0, height);
+
+
+	// place the particle randomly in the bounds of the view
+	var xLoc = randReal(0, width);
+	var yLoc = randReal(0, height);
+
+	particle
+		.x(xLoc)
+		.y(yLoc);
+
+	// since our particle is a function, and functions are objects, we can attach new attributes to it
+	// let's define random velocities and attach them to the particle
+	var vx = randReal(-3, 3);
+	var vy = randReal(-3, 3);
+
+	particle.vx = vx;
+	particle.vy = vy;
+
+	// finally, we'll want to display our particle
+	// since we will be using SVG Filters, let's use SVG elements
+	// attach a new svg circle to this particle (using D3)
+	var svgCircle = svg.append("circle");
+
+	particle.svgElement = svgCircle;
+
+	return particle;
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Next, let's look at the update function.
+				</p>
+
+				<button class="accordion">Click to see/hide the Update Particle code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+function updateParticle(particle) {
+	// move the particle based on its velocity
+	var vx = particle.vx;
+	var vy = particle.vy;
+	particle.move(vx, vy);
+
+	// decrease the particle's life
+	particle.decreaseLife();
+
+	// mark the particle as dead if it is outside of the x and y bounds
+	if (!particle.isInsideBounds()) {
+		particle.isAlive(false);
+	}
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Now, the draw function.
+				</p>
+
+				<button class="accordion">Click to see/hide the Draw Particle code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+function drawParticle(particle) {
+	// grab the svg circle from the particle
+	var circle = particle.svgElement;
+
+	// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+	circle
+			.attr("cx", particle.x())
+			.attr("cy", particle.y())
+			.attr("r", 5)
+			.attr("fill", "#ff9900") // orange
+			.attr("fill-opacity", particle.lifeRemainingPercentage());
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Finally, the destroy function. Note that destroying particles is a little tricky. We'll need to traverse the particle array in reverse order because we're going to remove dead particle elements from the array.
+				</p>
+
+				<button class="accordion">Click to see/hide the Destroy Particle code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+// code snippet showing how to remove a particle from a particle array
+
+// traverse the array in reverse order
+for (var i = particleArray.length - 1; i >= 0; i--) {
+	// get the particle
+	var particle = particleArray[i];
+
+	if (!particle.isAlive()) {
+		// destroy the particle
+		destroyParticle(particle);
+
+		// then, remove the particle from the array using slice
+		particleArray.slice(i, 1);
+
+		// and, finally, we can create a new particle to take its place
+		particleArray.push(createParticle());
+	}
+}
+
+function destroyParticle(particle) {
+	// remove SVG element
+	particle.svgElement.remove();
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Putting all of the lifecycle code together, we get the following example. Click the Play button to see it.
+				</p>
+				<div id="5-particles">
+					<iframe src="mini/5-particles.html" frameborder="0"></iframe>
+				</div>
+				<p>
+					Here's all of the JavaScript code for the example:
+				</p>
+
+				<button class="accordion">Click to see/hide the Particle example code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+var width = 950;
+var height = 290;
+
+// select the div where we'll put the SVG container
+var div = d3.select("#vis");
+
+// create the SVG container
+var svg = div.append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+
+var particleArray = [];
+
+// use the createParticle function (below) to make 5 particles
+for (var i = 0; i < 5; i++) {
+	particle = createParticle();
+	particleArray.push(particle);
+}
+
+function createParticle() {
+	// create a new Particle using the Particle module
+	var particle = Particle();
+
+	// define values for the particle
+	particle
+		.life(100)
+		.xbounds(0, width)
+		.ybounds(0, height);
+
+
+	// place the particle randomly in the bounds of the view
+	var xLoc = randReal(0, width);
+	var yLoc = randReal(0, height);
+
+	particle
+		.x(xLoc)
+		.y(yLoc);
+
+	// since our particle is a function, and functions are objects, we can attach new attributes to it
+	// let's define random velocities and attach them to the particle
+	var vx = randReal(-3, 3);
+	var vy = randReal(-3, 3);
+
+	particle.vx = vx;
+	particle.vy = vy;
+
+	// finally, we'll want to display our particle
+	// since we will be using SVG Filters, let's use SVG elements
+	// attach a new svg circle to this particle (using D3)
+	var svgCircle = svg.append("circle");
+
+	particle.svgElement = svgCircle;
+
+	return particle;
+}
+
+function updateParticle(particle) {
+	// move the particle based on its velocity
+	var vx = particle.vx;
+	var vy = particle.vy;
+	particle.move(vx, vy);
+
+	// decrease the particle's life
+	particle.decreaseLife();
+
+	// mark the particle as dead if it is outside of the x and y bounds
+	if (!particle.isInsideBounds()) {
+		particle.isAlive(false);
+	}
+}
+
+function drawParticle(particle) {
+	// grab the svg circle from the particle
+	var circle = particle.svgElement;
+
+	// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+	circle
+			.attr("cx", particle.x())
+			.attr("cy", particle.y())
+			.attr("r", 5)
+			.attr("fill", "#ff9900") // orange
+			.attr("fill-opacity", particle.lifeRemainingPercentage());
+}
+
+function destroyParticle(particle) {
+	// remove SVG element
+	particle.svgElement.remove();
+}
+
+
+var raf;
+
+// select the Play button
+var playButton = d3.select("#play");
+
+// click the Play button to toggle loop() on/off
+var playing = false;
+playButton.on("click", function(){
+	if (playing) {
+		cancelAnimationFrame(raf);
+		playButton.text("Play");
+	}
+	else {
+		raf = requestAnimationFrame(loop);
+		playButton.text("Pause");
+	}
+
+	playing = !playing;
+});
+
+
+function loop() {
+	// traverse the array in reverse order
+	for (var i = particleArray.length - 1; i >= 0; i--) {
+		// get the particle
+		var particle = particleArray[i];
+
+		// update the particle
+		updateParticle(particle);
+
+		// draw the particle
+		drawParticle(particle);
+
+		// if the particle is dead...
+		if (!particle.isAlive()) {
+			// destroy the particle (which in this case simply means to remove the SVG element from the
+			// particle to make sure that the DOM tree doesn't get too crowded with unused SVG elements)
+			destroyParticle(particle);
+
+			// then, remove the particle from the array using splice
+			particleArray.splice(i, 1);
+
+			// and, finally, we can create a new particle to take its place
+			particleArray.push(createParticle());
+		}
+	}
+
+	// keep the loop going
+	raf = requestAnimationFrame(loop);
+}
+					
+				</code>
+				</pre>
+				</div>
+
+				<h3 id="chapter-emitters">
+					Emitters
+				</h3>
+				<p>
+					Working with arrays of particles is a little cumbersome. It can be confusing, especially if multiple arrays of particles need to be used. We can use <span class="notes">emitters</span> to help us.
+				</p>
+				<p>
+					An emitter is an object that manages an array of particles. It automatically handles the emission and removal parts of dealing with particle arrays. If we feed it the different particle lifecycle functions, it will also handle those for us. Best of all, we can feed different lifecycle functions to different emitters to produce a variety of particle effects without having to confuse ourselves with handling the different arrays!
+				</p>
+				<p>
+					This last point is why we are not going to implement the lifecycle functions in the Particle class. Each emitter should be the conductor, telling each particle where to start, how to move, how to appear, and what to do when it expires.
+				</p>
+				<p>
+					Here's the code for a simple Emitter module/class:
+				</p>
+
+				<button class="accordion">Click to see/hide the Emitter module code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+function Emitter() {
+	var x = 0;
+	var y = 0;
+	var particleList = [];
+	var maxParticles = 0;
+	var emissionRate = 1;
+
+	// empty: user should define how to create particles
+	var createParticle = function(p){};
+
+	// empty: user should define how to update particles
+	var updateParticle = function(p){};
+	
+	// empty: user should define how to draw particles
+	var drawParticle = function(p){};
+
+	// empty: user should define how to destroy particles
+	var destroyParticle = function(p){};
+
+	function my(){}
+
+	my.x = function(value) {
+		if (!arguments.length) return x;
+		x = value;
+		return my;
+	};
+
+	my.y = function(value) {
+		if (!arguments.length) return y;
+		y = value;
+		return my;
+	};
+
+	my.emissionRate = function(value) {
+		if (!arguments.length) return emissionRate;
+		emissionRate = clamp(value, 1, maxParticles);
+		return my;
+	};
+
+	my.maxParticles = function(value) {
+		if (!arguments.length) return maxParticles;
+		maxParticles = value;
+		return my;
+	};
+
+	function emitParticles() {
+		for (var i = 0; i < emissionRate; i++) {
+			if (particleList.length < maxParticles) {
+				// create the particle object to pass to the createParticle function
+				// default location of particles set to emitter's location
+				var particle = Particle().x(x).y(y);
+				var newParticle = createParticle(particle);
+				
+				particleList.push(newParticle);
 			}
-			r.filter(".dead").style("opacity", 0);
-		}
-
-		var mp = 80;
-		var pl = 50;
-		var emitter = Emitter().pos(center).maxParticles(mp).emissionDirection(Vec2.zero()).particleLife(pl);
-		var renderer = svg.append("g");
-		renderer.attr("filter", "url(#gooey)");
-
-		for (var i=0; i<emitter.maxParticles(); i++) {
-			renderer.append("rect").attr("class", "particles particle-"+i);
-		}
-		var rectW = 8;
-		var rectH = 100;
-		svg.append("rect").attr("x", emitter.pos().x - rectW/2).attr("y", emitter.pos().y).attr("width", rectW).attr("height", rectH).attr("fill", Color("rgb(241, 230, 202)").rgbaString());
-
-		svg.append("rect").attr("x", emitter.pos().x - 4).attr("y", emitter.pos().y).attr("width", 8).attr("height", 8).attr("fill", Color("#0099ff").rgbaString()).attr("rx", 1);		
-
-		
-
-		
-
-			
-
-		var curTime = 0;
-		var eTime = 0;
-		var prevTime = Date.now();
-		function update(t) {
-			curTime = Date.now();
-			eTime += curTime - prevTime;
-			prevTime = curTime;
-			// console.log(eTime);
-
-			if (eTime >= 0) {
-				emitter.update(updateParticles);
-				emitter.draw(drawParticles);
-				eTime = 0;	
+			else {
+				break;
 			}
-			
-			
-			
-			
-			raf = window.requestAnimationFrame(update);	
 		}
+	}
 
-		 raf = requestAnimationFrame(update);
+	my.update = function() {
+		emitParticles();
 
-		 
+		// update and draw each particle in the list
+		for (var i = particleList.length - 1; i >= 0; i--) {
+			var particle = particleList[i];
+			updateParticle(particle);
+			drawParticle(particle);
 
-	</script>
+			// if the particle is "dead", remove it from the list
+			if (!particle.isAlive()) {
+				destroyParticle(particle);
+				particleList.splice(i,1);
+			}
+		}
+	};
+
+	my.createParticle = function(createParticleFunction) {
+		if (createParticleFunction !== undefined) {
+			if (typeof(createParticleFunction) === "function") {
+				createParticle = createParticleFunction;
+			}
+		}
+		return my;
+	};
+
+	my.updateParticle = function(updateParticleFunction) {
+		if (updateParticleFunction !== undefined) {
+			if (typeof(updateParticleFunction) === "function") {
+				updateParticle = updateParticleFunction;
+			}
+		}
+		return my;
+	};
+
+	my.drawParticle = function(drawParticleFunction) {
+		if (drawParticleFunction !== undefined) {
+			if (typeof(drawParticleFunction) === "function") {
+				drawParticle = drawParticleFunction;
+			}
+		}
+		return my;
+	};
+
+	my.destroyParticle = function(destroyParticleFunction) {
+		if (destroyParticleFunction !== undefined) {
+			if (typeof(destroyParticleFunction) === "function") {
+				destroyParticle = destroyParticleFunction;
+			}
+		}
+		return my;
+	};
+
+	return my;
+}					
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Let's implement the same example using an emitter.
+				</p>
+				<p>
+					Note that the createParticle function is different. This time, we don't have to create a Particle object. Instead, it's passed to us by the emitter. All we need to do is modify the particle's values to fit our needs! Another difference is that we don't have to return the modified particle. This is because JavaScript passes the reference to the particle object; when we make modifications, we're actually changing the original particle object in the emitter class.
+				</p>
+				<div id="emitters">
+					<iframe src="mini/emitters3.html" frameborder="0"></iframe>
+				</div>
+				<p>
+					Here's the code for the example, now with the emitter.
+				</p>
+
+				<button class="accordion">Click to see/hide the Emitter example code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+var width = 950;
+var height = 290;
+
+// select the div where we'll put the SVG container
+var div = d3.select("#vis");
+
+// create the SVG container
+var svg = div.append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+
+function createParticle(particle) {
+	// define values for the particle
+	particle
+		.life(100)
+		.xbounds(0, width)
+		.ybounds(0, height);
+
+
+	// place the particle randomly in the bounds of the view
+	var xLoc = randReal(0, width);
+	var yLoc = randReal(0, height);
+
+	particle
+		.x(xLoc)
+		.y(yLoc);
+
+	// since our particle is a function, and functions are objects, we can attach new attributes to it
+	// let's define random velocities and attach them to the particle
+	var vx = randReal(-3, 3);
+	var vy = randReal(-3, 3);
+
+	particle.vx = vx;
+	particle.vy = vy;
+
+	// finally, we'll want to display our particle
+	// since we will be using SVG Filters, let's use SVG elements
+	// attach a new svg circle to this particle (using D3)
+	var svgCircle = svg.append("circle");
+
+	particle.svgElement = svgCircle;
+}
+
+function updateParticle(particle) {
+	// move the particle based on its velocity
+	var vx = particle.vx;
+	var vy = particle.vy;
+	particle.move(vx, vy);
+
+	// decrease the particle's life
+	particle.decreaseLife();
+
+	// mark the particle as dead if it is outside of the x and y bounds
+	if (!particle.isInsideBounds()) {
+		particle.isAlive(false);
+	}
+}
+
+function drawParticle(particle) {
+	// grab the svg circle from the particle
+	var circle = particle.svgElement;
+
+	// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+	circle
+			.attr("cx", particle.x())
+			.attr("cy", particle.y())
+			.attr("r", 5)
+			.attr("fill", "#ff9900") // orange
+			.attr("fill-opacity", particle.lifeRemainingPercentage());
+}
+
+function destroyParticle(particle) {
+	// remove SVG element
+	particle.svgElement.remove();
+}
+
+
+var emitter = Emitter()
+		.x(width/2)
+		.y(height/2)
+		.maxParticles(5)
+		.emissionRate(1)
+		.createParticle(createParticle)
+		.updateParticle(updateParticle)
+		.drawParticle(drawParticle)
+		.destroyParticle(destroyParticle);
+
+var raf;
+
+// select the Play button
+var playButton = d3.select("#play");
+
+// click the Play button to toggle loop() on/off
+var playing = false;
+playButton.on("click", function(){
+	if (playing) {
+		cancelAnimationFrame(raf);
+		playButton.text("Play");
+	}
+	else {
+		raf = requestAnimationFrame(loop);
+		playButton.text("Pause");
+	}
+
+	playing = !playing;
+});
+
+
+function loop() {
+	emitter.update();
+
+	// keep the loop going
+	raf = requestAnimationFrame(loop);
+}				
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Before we move on to SVG Filters, let's use our new Emitter class to set the stage for the gooey fire. We're going to place an emitter toward the bottom-center of the container and then tell the emitter to launch all particles randomly upward, in a cone-like fashion. Here's what this looks like.
+				</p>
+				<div id="emitters">
+					<iframe src="mini/emitters4.html" frameborder="0"></iframe>
+				</div>
+				<p>
+					Here's the code:
+				</p>
+
+				<button class="accordion">Click to see/hide the Matchstick emitter code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+var width = 950;
+var height = 290;
+
+// select the div where we'll put the SVG container
+var div = d3.select("#vis");
+
+// create the SVG container
+var svg = div.append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+
+function createParticle(particle) {
+	// define values for the particle
+	particle
+		.life(80)
+		.xbounds(0, width)
+		.ybounds(0, height);
+
+	// note: there is no need to set the location (x,y) of the particles as their default is
+	// set to be the emitter's location
+
+	// random velocities that generally move in an upward, cone-like way
+	var vx = randReal(-1, 1);
+	var vy = randReal(-2, -1);
+
+	particle.vx = vx;
+	particle.vy = vy;
+
+	// finally, we'll want to display our particle
+	// since we will be using SVG Filters, let's use SVG elements
+	// attach a new svg circle to this particle (using D3)
+	var svgCircle = svg.append("circle");
+
+	particle.svgElement = svgCircle;
+}
+
+function updateParticle(particle) {
+	// move the particle based on its velocity
+	var vx = particle.vx;
+	var vy = particle.vy;
+	particle.move(vx, vy);
+
+	// decrease the particle's life
+	particle.decreaseLife();
+
+	// mark the particle as dead if it is outside of the x and y bounds
+	if (!particle.isInsideBounds()) {
+		particle.isAlive(false);
+	}
+}
+
+function drawParticle(particle) {
+	// grab the svg circle from the particle
+	var circle = particle.svgElement;
+
+	// since fires cool as they move away from their sources, start with a "hot" yellow
+	// color and move to a "cool" red color as the particle's life dwindles
+	var color = "rgb(255," + (255 * particle.lifeRemainingPercentage()) + ",0)";
+
+	// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+	circle
+			.attr("cx", particle.x())
+			.attr("cy", particle.y())
+			.attr("r", 10)
+			.attr("fill", color)
+			.attr("fill-opacity", particle.lifeRemainingPercentage());
+}
+
+function destroyParticle(particle) {
+	// remove SVG element
+	particle.svgElement.remove();
+}
+
+
+var emitter = Emitter()
+		.x(width/2)
+		.y(height * 0.6)
+		.maxParticles(100)
+		.emissionRate(1)
+		.createParticle(createParticle)
+		.updateParticle(updateParticle)
+		.drawParticle(drawParticle)
+		.destroyParticle(destroyParticle);
+
+
+// matchstick
+var rectW = 8;
+var rectH = 100;
+svg.append("rect")
+	.attr("x", emitter.x() - rectW/2)
+	.attr("y", emitter.y()+4)
+	.attr("width", rectW)
+	.attr("height", rectH)
+	.attr("fill", "rgb(241, 230, 202)");
+
+svg.append("rect")
+	.attr("x", emitter.x() - 4)
+	.attr("y", emitter.y()+4)
+	.attr("width", 8)
+	.attr("height", 8)
+	.attr("fill", "#0099ff")
+	.attr("rx", 1);
+
+var raf;
+
+// select the Play button
+var playButton = d3.select("#play");
+
+// click the Play button to toggle loop() on/off
+var playing = false;
+playButton.on("click", function(){
+	if (playing) {
+		cancelAnimationFrame(raf);
+		playButton.text("Play");
+	}
+	else {
+		raf = requestAnimationFrame(loop);
+		playButton.text("Pause");
+	}
+
+	playing = !playing;
+});
+
+
+function loop() {
+	emitter.update();
+
+	// keep the loop going
+	raf = requestAnimationFrame(loop);
+}
+				</code>
+				</pre>
+				</div>
+				
+
+				
+				<h3 id="chapter-svg-filters">
+					SVG Filters
+				</h3>
+				<p>
+					We know almost everything we need to at this point to be able to make it. What we're missing is the <span class="notes">gooey effect</span>.
+				</p>
+				<p>
+					I first learned out about the SVG gooey effect from <a href="https://www.visualcinnamon.com">Nadieh Bremer's</a> post on <a href="https://www.visualcinnamon.com/2015/05/gooey-effect.html">creating a gooey effect during a transition</a>. I highly recommend you visit her site and learn from her. Her stuff is great and so full of joy; you can really tell she loves what she does!
+				</p>
+				<p>
+					Back to the gooey filter. It's composed of three different pieces:
+				</p>
+				<ol>
+					<li><span class="notes">Blur</span>: We'll use a Gaussian blur effect on the SVG container.</li>
+					<li><span class="notes">Color Matrix</span>: We'll take that blur effect and transform it using a color matrix that will give us the gooey effect.</li>
+					<li><span class="notes">Composition</span>: We'll compose the original SVG container with the gooey effect to imube all our particles with gooey-ness.</li>
+				</ol>
+				<p>
+					Here's what the filter will look like (in D3-ese).
+				</p>
+
+				<button class="accordion">Click to see/hide the Gooey filter code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+// SVG "gooey" filter
+// code borrowed from: https://www.visualcinnamon.com/2015/05/gooey-effect.html
+var defs = svg.append('defs');
+var filter = defs.append('filter').attr('id','gooey');
+filter.append('feGaussianBlur')
+	.attr('in','SourceGraphic')
+	.attr('stdDeviation','10')
+	.attr('result','blur');
+filter.append('feColorMatrix')
+	.attr('in','blur')
+	.attr('mode','matrix')
+	.attr('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7')
+	.attr('result','gooey');
+filter.append('feComposite')
+	.attr('in','SourceGraphic')
+	.attr('in2','gooey')
+	.attr('operator','atop');
+				</code>
+				</pre>
+				</div>
+
+
+				<p>
+					Let's add it to our particles and see what happens!
+				</p>
+				<div id="blurry-particles">
+					<iframe src="mini/gooey-particles.html" frameborder="0"></iframe>
+				</div>
+
+				<p>
+					Hmm... It doesn't look quite right. It needs a few changes to make it look right:
+				</p>
+				<ol>
+					<li>Reduce the particles' life so that the yellow-to-red effect still shows given the faster particle speeds.</li>
+					<li>Add a random spray call to generate a normalized vector pointing in a random direction between two values. This helps us maintain our cone shape and helps make the colors look better.</li>
+					<li>Increase the velocity each time by a little bit (using the random spray function).</li>
+					<li>Clamp the opacity to between 0.6 and 1.</li>
+				</ol>
+
+				<div id="blurry-particles">
+					<iframe src="mini/gooey-fire.html" frameborder="0"></iframe>
+				</div>
+
+				<p>
+					Ah, that's much better! Here's the final batch of JavaScript code:
+				</p>
+				<button class="accordion">Click to see/hide the Gooey Fire code</button>
+				<div class="panel">
+				<pre data-lang="JavaScript">
+				<code class="language-javascript">
+var width = 950;
+var height = 290;
+
+// select the div where we'll put the SVG container
+var div = d3.select("#vis");
+
+// create the SVG container
+var svg = div.append("svg")
+		.attr("width", width)
+		.attr("height", height);
+
+var defs = svg.append('defs');
+var filter = defs.append('filter').attr('id','gooey');
+filter.append('feGaussianBlur')
+	.attr('in','SourceGraphic')
+	.attr('stdDeviation','10')
+	.attr('result','blur');
+filter.append('feColorMatrix')
+	.attr('in','blur')
+	.attr('mode','matrix')
+	.attr('values','1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7')
+	.attr('result','gooey');
+filter.append('feComposite')
+	.attr('in','SourceGraphic')
+	.attr('in2','gooey')
+	.attr('operator','atop');
+
+// add a group element for the particles
+// this is where we'll apply the filter
+var g = svg.append("g");
+g.style("filter", "url(#gooey)");
+
+
+function createParticle(particle) {
+	// define values for the particle
+	particle
+		.life(30)
+		.xbounds(0, width)
+		.ybounds(0, height);
+
+	// note: there is no need to set the location (x,y) of the particles as their default is
+	// set to be the emitter's location
+
+	// random velocities that generally move in an upward, cone-like way
+	var angleStart = 270 - 25;
+	var angleStop = 270 + 25;
+
+	var vel = randomSpray(angleStart, angleStop);
+	vel = scale(vel, 1);
+
+	particle.vx = vel[0];
+	particle.vy = vel[1];
+
+	// radius of svg circle for this particle
+	particle.r = 10;
+
+	// finally, we'll want to display our particle
+	// since we will be using SVG Filters, let's use SVG elements
+	// attach a new svg circle to this particle (using D3)
+	var svgCircle = g.append("circle");
+
+	particle.svgElement = svgCircle;
+}
+
+function updateParticle(particle) {
+	// move the particle based on its velocity
+	// jitter the velocity a bit using randomness
+	var angleStart = 270 - 55;
+	var angleStop = 270 + 55;
+	var vel = randomSpray(angleStart, angleStop);
+	vel = scale(vel, 0.7);
+
+	particle.vx += vel[0];
+	particle.vy += vel[1];
+	
+	var vx = particle.vx;
+	var vy = particle.vy;
+	particle.move(vx, vy);
+
+	// decrease the particle's life
+	particle.decreaseLife();
+
+	// mark the particle as dead if it is outside of the x and y bounds
+	if (!particle.isInsideBounds()) {
+		particle.isAlive(false);
+	}
+}
+
+function drawParticle(particle) {
+	// grab the svg circle from the particle
+	var circle = particle.svgElement;
+
+	// since fires cool as they move away from their sources, start with a "hot" yellow
+	// color and move to a "cool" red color as the particle's life dwindles
+	var color = "rgb(255," + (255 * particle.lifeRemainingPercentage()) + ",0)";
+
+	// set the opacity to be between 0.3 and 1
+	var opacity = clamp(particle.lifeRemainingPercentage(), 0.6, 1);
+
+	// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+	circle
+			.attr("cx", particle.x())
+			.attr("cy", particle.y())
+			.attr("r", particle.r)
+			.attr("fill", color)
+			.attr("fill-opacity", opacity);
+}
+
+function destroyParticle(particle) {
+	// remove SVG element
+	particle.svgElement.remove();
+}
+
+
+var emitter = Emitter()
+		.x(width/2)
+		.y(height * 0.6)
+		.maxParticles(80)
+		.emissionRate(1)
+		.createParticle(createParticle)
+		.updateParticle(updateParticle)
+		.drawParticle(drawParticle)
+		.destroyParticle(destroyParticle);
+
+// matchstick
+var rectW = 8;
+var rectH = 100;
+svg.append("rect")
+	.attr("x", emitter.x() - rectW/2)
+	.attr("y", emitter.y()+4)
+	.attr("width", rectW)
+	.attr("height", rectH)
+	.attr("fill", "rgb(241, 230, 202)");
+
+svg.append("rect")
+	.attr("x", emitter.x() - 4)
+	.attr("y", emitter.y()+4)
+	.attr("width", 8)
+	.attr("height", 8)
+	.attr("fill", "#0099ff")
+	.attr("rx", 1);
+
+var raf;
+
+// select the Play button
+var playButton = d3.select("#play");
+
+// click the Play button to toggle loop() on/off
+var playing = false;
+playButton.on("click", function(){
+	if (playing) {
+		cancelAnimationFrame(raf);
+		playButton.text("Play");
+	}
+	else {
+		raf = requestAnimationFrame(loop);
+		playButton.text("Pause");
+	}
+
+	playing = !playing;
+});
+
+
+function loop() {
+	emitter.update();
+
+	// keep the loop going
+	raf = requestAnimationFrame(loop);
+}
+				</code>
+				</pre>
+				</div>
+
+				<p>
+					Thanks for reading! I hope you now understand particles and SVG filters a little more. If you want to clone the project, you can find it on my Github page!
+				</p>
+
+			</div>
+		</div>
+		<footer class="hero-footer">
+			<div class="footer-info">
+			<a href="https://github.com/kiphlora/"><div>github.com/kiphlora</div></a>
+			<a href="mailto:kiphlora@gmail.com" target="_top"><div>kiphlora@gmail.com</div></a>
+			<p>&copy 2017 Brett Moran</p>
+		</div>
+		</footer>
+  </div>
+
+
+  <script>
+  	// collapsible accordion panel styling, html, and JS code borrowed from:
+  	// https://www.w3schools.com/howto/howto_js_accordion.asp
+		var acc = document.getElementsByClassName("accordion");
+		var i;
+
+		for (i = 0; i < acc.length; i++) {
+		  acc[i].onclick = function() {
+		    this.classList.toggle("active");
+		    var panel = this.nextElementSibling;
+		    if (panel.style.maxHeight){
+		      panel.style.maxHeight = null;
+		    } else {
+		      panel.style.maxHeight = panel.scrollHeight + "px";
+		    } 
+		  }
+		}
+  </script>
+
 </body>
 </html>

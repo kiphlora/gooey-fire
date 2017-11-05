@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Emitters</title>
+
+	<script src="../js/d3/d3.min.js"></script>
+	<script src="../js/util.js"></script>
+	<script src="../js/particle-system.js"></script>
+	
+	<link rel="stylesheet" href="../css/mini-style.css">
+
+	<style>
+		#play {
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			margin: 10px;
+			padding: 10px 15px;
+			color: white;
+			box-shadow: none;
+		}
+
+		#play:hover {
+			background-color: white;
+			color: black;
+		}
+	</style>
+</head>
+<body>
+	<div id="container">
+		<div id="vis">
+			<button id="play">Play</button>
+		</div>
+	</div>
+
+	<script>
+		var width = 950;
+		var height = 290;
+
+		// select the div where we'll put the SVG container
+		var div = d3.select("#vis");
+
+		// create the SVG container
+		var svg = div.append("svg")
+				.attr("width", width)
+				.attr("height", height);
+		
+
+		function createParticle(particle) {
+			// define values for the particle
+			particle
+				.life(100)
+				.xbounds(0, width)
+				.ybounds(0, height);
+
+
+			// place the particle randomly in the bounds of the view
+			var xLoc = randReal(0, width);
+			var yLoc = randReal(0, height);
+
+			particle
+				.x(xLoc)
+				.y(yLoc);
+
+			// since our particle is a function, and functions are objects, we can attach new attributes to it
+			// let's define random velocities and attach them to the particle
+			var vx = randReal(-3, 3);
+			var vy = randReal(-3, 3);
+
+			particle.vx = vx;
+			particle.vy = vy;
+
+			// finally, we'll want to display our particle
+			// since we will be using SVG Filters, let's use SVG elements
+			// attach a new svg circle to this particle (using D3)
+			var svgCircle = svg.append("circle");
+
+			particle.svgElement = svgCircle;
+		}
+
+		function updateParticle(particle) {
+			// move the particle based on its velocity
+			var vx = particle.vx;
+			var vy = particle.vy;
+			particle.move(vx, vy);
+
+			// decrease the particle's life
+			particle.decreaseLife();
+
+			// mark the particle as dead if it is outside of the x and y bounds
+			if (!particle.isInsideBounds()) {
+				particle.isAlive(false);
+			}
+		}
+
+		function drawParticle(particle) {
+			// grab the svg circle from the particle
+			var circle = particle.svgElement;
+
+			// using D3 to manipulate the SVG circle, draw it according to the particle's stats
+			circle
+					.attr("cx", particle.x())
+					.attr("cy", particle.y())
+					.attr("r", 5)
+					.attr("fill", "#ff9900") // orange
+					.attr("fill-opacity", particle.lifeRemainingPercentage());
+		}
+
+		function destroyParticle(particle) {
+			// remove SVG element
+			particle.svgElement.remove();
+		}
+
+
+		var emitter = Emitter()
+				.x(width/2)
+				.y(height/2)
+				.maxParticles(5)
+				.emissionRate(1)
+				.createParticle(createParticle)
+				.updateParticle(updateParticle)
+				.drawParticle(drawParticle)
+				.destroyParticle(destroyParticle);
+
+		var raf;
+
+		// select the Play button
+		var playButton = d3.select("#play");
+
+		// click the Play button to toggle loop() on/off
+		var playing = false;
+		playButton.on("click", function(){
+			if (playing) {
+				cancelAnimationFrame(raf);
+				playButton.text("Play");
+			}
+			else {
+				raf = requestAnimationFrame(loop);
+				playButton.text("Pause");
+			}
+
+			playing = !playing;
+		});
+
+
+		function loop() {
+			emitter.update();
+
+			// keep the loop going
+			raf = requestAnimationFrame(loop);
+		}
+		
+
+
+
+
+
+	</script>
+
+
+
+</body>
+</html>
