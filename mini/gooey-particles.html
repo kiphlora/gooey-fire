@@ -115,7 +115,7 @@
 
 			// since fires cool as they move away from their sources, start with a "hot" yellow
 			// color and move to a "cool" red color as the particle's life dwindles
-			var color = "rgb(255," + (255 * particle.lifeRemainingPercentage()) + ",0)";
+			var color = "rgb(255," + Math.floor(255 * particle.lifeRemainingPercentage()) + ",0)";
 
 			// using D3 to manipulate the SVG circle, draw it according to the particle's stats
 			circle
