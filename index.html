@@ -674,18 +674,8 @@ function Emitter() {
 				</div>
 
 				<p>
-					Let's implement the same example using an emitter.
+					Let's implement the same example using an emitter. Since it's the exact same example as before, we won't watch it. Instead, we'll jump straight into the code:
 				</p>
-				<p>
-					Note that the createParticle function is different. This time, we don't have to create a Particle object. Instead, it's passed to us by the emitter. All we need to do is modify the particle's values to fit our needs! Another difference is that we don't have to return the modified particle. This is because JavaScript passes the reference to the particle object; when we make modifications, we're actually changing the original particle object in the emitter class.
-				</p>
-				<div id="emitters">
-					<iframe src="mini/emitters3.html" frameborder="0"></iframe>
-				</div>
-				<p>
-					Here's the code for the example, now with the emitter.
-				</p>
-
 				<button class="accordion">Click to see/hide the Emitter example code</button>
 				<div class="panel">
 				<pre data-lang="JavaScript">
@@ -808,6 +798,10 @@ function loop() {
 				</code>
 				</pre>
 				</div>
+
+				<p>
+					Note that the createParticle function is different. This time, we don't have to create a Particle object. Instead, it's passed to us by the emitter. All we need to do is modify the particle's values to fit our needs! Another difference is that we don't have to return the modified particle. This is because JavaScript passes the reference to the particle object; when we make modifications, we're actually changing the original particle object in the emitter class.
+				</p>
 
 				<p>
 					Before we move on to SVG Filters, let's use our new Emitter class to set the stage for the gooey fire. We're going to place an emitter toward the bottom-center of the container and then tell the emitter to launch all particles randomly upward, in a cone-like fashion. Here's what this looks like.
@@ -1015,7 +1009,7 @@ filter.append('feComposite')
 				</div>
 
 				<p>
-					Hmm... It doesn't look quite right. It needs a few changes to make it look right:
+					Hmm... It doesn't look quite right. Let's make a few changes:
 				</p>
 				<ol>
 					<li>Reduce the particles' life so that the yellow-to-red effect still shows given the faster particle speeds.</li>
